@@ -24,8 +24,15 @@ class Command(BaseCommand):
 
         select_query = ('SELECT * FROM "CMIS_UCLAPI_V_BOOKINGS"'
                         ' WHERE (bookabletype = \'CB\' AND setid'
-                        ' = \'LIVE-16-17\')'
+                        ' = \'LIVE-16-17\' AND startdatetime >= '
+                        'TO_DATE(\'20/MAY/2017\',\'dd/mon/yyyy\'))'
                         )
+
+        select_query2 = (
+            'SELECT * FROM "CMIS_UCLAPI_V_BOOKINGS"'
+            ' WHERE (bookabletype = \'CB\' AND setid'
+            ' = \'LIVE-16-17\')'
+        )
 
         cur.execute(select_query)
 
