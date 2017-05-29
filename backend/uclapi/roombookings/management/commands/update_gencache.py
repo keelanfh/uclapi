@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 
 import cx_Oracle
 from roombookings.models import BookingA, BookingB, Lock
+from django.core.management import call_command
 
 
 class Command(BaseCommand):
@@ -22,13 +23,7 @@ class Command(BaseCommand):
 
         cur = con.cursor()
 
-        select_query = ('SELECT * FROM "CMIS_UCLAPI_V_BOOKINGS"'
-                        ' WHERE (bookabletype = \'CB\' AND setid'
-                        ' = \'LIVE-16-17\' AND startdatetime >= '
-                        'TO_DATE(\'20/MAY/2017\',\'dd/mon/yyyy\'))'
-                        )
-
-        select_query2 = (
+        select_query = (
             'SELECT * FROM "CMIS_UCLAPI_V_BOOKINGS"'
             ' WHERE (bookabletype = \'CB\' AND setid'
             ' = \'LIVE-16-17\')'
@@ -84,3 +79,4 @@ class Command(BaseCommand):
         lock.save()
 
         self.stdout.write("Updated a bucket!")
+        call_command('trigger_webhooks')
