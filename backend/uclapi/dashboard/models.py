@@ -38,6 +38,8 @@ class App(models.Model):
     created = models.DateTimeField(auto_now=False, auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
+    deleted = models.BooleanField(default=False)
+
     def regenerate_token(self):
         new_token = generate_api_token()
         self.api_token = new_token
@@ -72,7 +74,7 @@ class APICall(models.Model):
         _DATABASE = 'default'
 
 
-class WebHook(models.Model):
+class Webhook(models.Model):
     app = models.OneToOneField(App)
     url = models.URLField(max_length=1000)
 
@@ -82,5 +84,23 @@ class WebHook(models.Model):
 
     last_fired = models.DateTimeField(blank=True, null=True)
 
+    ownership_verified = models.BooleanField(default=False)
+    ownership_verification_secret = models.CharField(max_length=100)
+
     created = models.DateTimeField(auto_now=False, auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
+
+    enabled = models.BooleanField(default=False)
+
+    class Meta:
+        _DATABASE = 'default'
+
+
+class WebhookTriggerHistory(models.Model):
+    webhook = models.ForeignKey(Webhook)
+    payload = models.CharField(max_length=10000000)
+
+    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+
+    class Meta:
+        _DATABASE = 'default'
