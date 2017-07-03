@@ -117,7 +117,14 @@ def dashboard(request):
             "id": app.id,
             "token": app.api_token,
             "created": app.created,
-            "updated": app.last_updated
+            "updated": app.last_updated,
+            "webhook": {
+                "verification_secret": app.webhook.verification_secret,
+                "url": app.webhook.url,
+                "siteid": app.webhook.siteid,
+                "roomid": app.webhook.roomid,
+                "contact": app.webhook.contact
+            }
         })
 
     initial_data = json.dumps(user_meta, cls=DjangoJSONEncoder)
