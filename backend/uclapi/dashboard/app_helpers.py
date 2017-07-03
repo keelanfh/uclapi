@@ -30,3 +30,10 @@ def generate_app_id():
     final = "A" + key
 
     return final
+
+
+def generate_secret():
+    key = hexlify(os.urandom(30)).decode()
+    dashed = '-'.join(textwrap.wrap(key, 15))
+
+    return dashed
