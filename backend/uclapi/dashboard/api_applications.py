@@ -49,7 +49,10 @@ def create_app(request):
             "id": new_app.id,
             "token": new_app.api_token,
             "created": new_app.created,
-            "updated": new_app.last_updated
+            "updated": new_app.last_updated,
+            "webhook": {
+                "verification_secret": new_app.webhook.verification_secret,
+            }
         }
     })
 
