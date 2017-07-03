@@ -4,6 +4,9 @@ import 'whatwg-fetch';
 import Cookies from 'js-cookie';
 import moment from 'moment';
 import Modal from 'react-modal';
+import Collapse, { Panel } from 'rc-collapse';
+
+import Webhook from './webhook.jsx';
 
 class App extends React.Component {
   constructor(props){
@@ -47,7 +50,7 @@ class App extends React.Component {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken':Cookies.get('csrftoken') 
+        'X-CSRFToken':Cookies.get('csrftoken')
       },
       body: 'new_name=' + this.refs.name.value +
         '&app_id=' + this.props.appId
@@ -89,7 +92,7 @@ class App extends React.Component {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken':Cookies.get('csrftoken') 
+        'X-CSRFToken':Cookies.get('csrftoken')
       },
       body: 'app_id=' + this.props.appId
     }).then((res)=>{
@@ -203,6 +206,7 @@ class App extends React.Component {
 
 
   render () {
+    const { webhook } = this.props;
     return <div className="app pure-u-1 pure-u-xl-1-2">
       <div className="card">
         {this.state.editing ? (
@@ -212,7 +216,7 @@ class App extends React.Component {
               <button type="submit" className="pure-button pure-button-primary padded" onClick={this.changeName}>Submit</button>
               <button className="pure-button button-error padded" onClick={this.stopEditing}>Cancel</button>
             </fieldset>
-          </form> 
+          </form>
         ):(
           <div className="pure-g">
             <div className="pure-u-1-2">
@@ -233,7 +237,7 @@ class App extends React.Component {
             API Token
             <form className="pure-form pure-g">
               <div className="pure-u-2-3">
-                <input 
+                <input
                   type="text"
                   ref="apiToken"
                   className="pure-input-1"
@@ -243,7 +247,7 @@ class App extends React.Component {
                 />
               </div>
               <div className="pure-u-1-6">
-                <button 
+                <button
                   className="pure-button pure-button-primary pure-input-1 tooltip"
                   onClick={this.copyToken}
                   onMouseEnter={this.setCopyText}
@@ -254,8 +258,8 @@ class App extends React.Component {
                 </button>
               </div>
               <div className="pure-u-1-6">
-                <button 
-                  className="pure-button pure-button-primary pure-input-1" 
+                <button
+                  className="pure-button pure-button-primary pure-input-1"
                   onClick={this.regenConfirm}
                   style={{ 'border': '1px solid #ccc', 'borderRadius': '0px 4px 4px 0px'}}
                 >
@@ -267,6 +271,18 @@ class App extends React.Component {
         </div>
         <p title={moment(this.props.created).format('dddd, Do MMMM YYYY, h:mm:ss a')}>Created: {moment(this.props.created).fromNowOrNow()}</p>
         <p title={moment(this.props.updated).format('dddd, Do MMMM YYYY, h:mm:ss a')}>Updated: {moment(this.props.updated).fromNowOrNow()}</p>
+        <Collapse>
+          <Panel
+            header="Webhook Settings"
+            showArrow
+          >
+            <Webhook
+              appId={this.props.appId}
+              {...webhook}
+            />
+          </Panel>
+        </Collapse>
+
         <label className="error">{this.state.error}</label>
         </div>
     </div>;
@@ -279,6 +295,13 @@ App.propTypes = {
   appKey: React.PropTypes.string.isRequired,
   created: React.PropTypes.string.isRequired,
   updated: React.PropTypes.string.isRequired,
+  webhook: React.PropTypes.shape({
+    verification_secret: React.PropTypes.string.isRequired,
+    url: React.PropTypes.string.isRequired,
+    siteid: React.PropTypes.string.isRequired,
+    roomid: React.PropTypes.string.isRequired,
+    contact: React.PropTypes.string.isRequired,
+  }),
   update: React.PropTypes.func.isRequired,
   remove: React.PropTypes.func.isRequired
 };
@@ -300,7 +323,7 @@ class AppForm extends React.Component {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken':Cookies.get('csrftoken') 
+        'X-CSRFToken':Cookies.get('csrftoken')
       },
       body: 'name=' + this.refs.name.value
     }).then((res)=>{
@@ -373,7 +396,7 @@ class AppList extends React.Component {
   }
 
   addApp(app){
-    this.setState( (state) => 
+    this.setState( (state) =>
       update(state, {apps: {$push: [app]}})
     );
   }
@@ -382,7 +405,7 @@ class AppList extends React.Component {
     this.setState( (state) => {
       let appIndex = this.getAppIndex(id);
       if(appIndex !== undefined){
-        return update(state, {apps: {[appIndex]: {$set: app}}});          
+        return update(state, {apps: {[appIndex]: {$set: app}}});
       }
     });
   }
@@ -429,6 +452,7 @@ class AppList extends React.Component {
             key={i}
             update={this.updateApp}
             remove={this.deleteApp}
+            webhook={app.webhook}
           />;
         })}
       </div>
