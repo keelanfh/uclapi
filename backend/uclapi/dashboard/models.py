@@ -1,7 +1,10 @@
 from django.db import models
 
 from .app_helpers import generate_temp_api_token, generate_api_token, \
-    generate_app_id
+    generate_app_id, generate_secret
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 models.options.DEFAULT_NAMES += ('_DATABASE',)
 
@@ -76,7 +79,7 @@ class APICall(models.Model):
 
 class Webhook(models.Model):
     app = models.OneToOneField(App)
-    url = models.URLField(max_length=1000)
+    url = models.URLField(max_length=1000, blank=True)
 
     siteid = models.CharField(max_length=40, blank=True)
     roomid = models.CharField(max_length=160, blank=True)
@@ -84,13 +87,13 @@ class Webhook(models.Model):
 
     last_fired = models.DateTimeField(blank=True, null=True)
 
-    ownership_verified = models.BooleanField(default=False)
-    ownership_verification_secret = models.CharField(max_length=100)
-
-    created = models.DateTimeField(auto_now=False, auto_now_add=True)
-    last_updated = models.DateTimeField(auto_now=True)
+    verification_secret = models.CharField(
+        max_length=100,
+        default=generate_secret
+    )
 
     enabled = models.BooleanField(default=False)
+    last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         _DATABASE = 'default'
@@ -104,3 +107,11 @@ class WebhookTriggerHistory(models.Model):
 
     class Meta:
         _DATABASE = 'default'
+
+
+# Django signal
+@receiver(post_save, sender=App)
+def create_webhook_on_app_creation(sender, instance, created, **kwargs):
+    if created:
+        new_webhook = Webhook(app=instance)
+        new_webhook.save()
