@@ -88,7 +88,7 @@ def does_token_exist(view_func):
             return view_func(request, *args, **kwargs)
 
         try:
-            App.objects.get(api_token=token)
+            App.objects.get(api_token=token, deleted=False)
         except ObjectDoesNotExist:
             response = PrettyJsonResponse({
                 "ok": False,

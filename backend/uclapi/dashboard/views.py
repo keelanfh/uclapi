@@ -109,7 +109,7 @@ def dashboard(request):
         "apps": []
     }
 
-    user_apps = App.objects.filter(user=user)
+    user_apps = App.objects.filter(user=user, deleted=False)
 
     for app in user_apps:
         user_meta["apps"].append({
