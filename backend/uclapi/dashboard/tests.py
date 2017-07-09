@@ -5,8 +5,8 @@ from django.test import RequestFactory, TestCase
 from rest_framework.test import APIRequestFactory
 
 from .middleware.fake_shibboleth_middleware import FakeShibbolethMiddleWare
-from .models import App, User, Webhook
-from .webhook_views import create_webhook, edit_webhook, user_owns_app
+from .models import App, User
+from .webhook_views import edit_webhook, user_owns_app
 
 
 class DashboardTestCase(TestCase):
@@ -135,106 +135,15 @@ class WebHookRequestViewTests(TestCase):
         self.user2 = User.objects.create(cn="test2", employee_id=2)
         self.app2 = App.objects.create(user=self.user2, name="Another App")
 
-    def test_create_webhook_GET(self):
-        request = self.factory.get('/')
-        response = create_webhook(request)
-
-        content = json.loads(response.content.decode())
-
-        self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
-        self.assertEqual(content["message"], "Request is not of method POST")
-
-    def test_create_webhook_POST_missing_parameters(self):
-        request = self.factory.post('/')
-        response = create_webhook(request)
-
-        content = json.loads(response.content.decode())
-
-        self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
-        self.assertEqual(
-            content["message"],
-            "Request is missing parameters."
-            " Should have app_id, url, siteid, roomid, contact"
-            " as well as a sessionid cookie"
-        )
-
-    def test_create_webhook_POST_user_does_not_own_app(self):
-        request = self.factory.post(
-            '/',
-            {
-                'app_id': self.app2.id, 'siteid': 1, 'roomid': 1,
-                'contact': 1, 'url': 1
-            }
-        )
-        request.session = {'user_id': self.user1.id}
-        response = create_webhook(request)
-
-        content = json.loads(response.content.decode())
-
-        self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
-        self.assertEqual(
-            content["message"],
-            "App does not exist or user is lacking permission."
-        )
-
-    @patch(
-        'dashboard.webhook_views.verify_ownership', lambda *args: False
-    )
-    def test_create_webhook_POST_user_owns_app_ownership_not_verified(self):
-        request = self.factory.post(
-            '/',
-            {
-                'app_id': self.app1.id, 'siteid': 1,
-                'roomid': 1, 'contact': 1, 'url': 1
-            }
-        )
-        request.session = {'user_id': self.user1.id}
-        response = create_webhook(request)
-
-        content = json.loads(response.content.decode())
-
-        self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
-        self.assertEqual(
-            content["message"],
-            "Ownership of webhook can't be verified."
-            "[Link to relevant docs here]"
-        )
-
-    @patch(
-        'dashboard.webhook_views.verify_ownership', lambda *args: True
-    )
-    @patch('keen.add_event')
-    def test_create_webhook_POST_user_owns_app_ownership_verified(self, keen):
-        request = self.factory.post(
-            '/',
-            {
-                'app_id': self.app1.id, 'siteid': 1,
-                'roomid': 1, 'contact': 1, 'url': 1
-            }
-        )
-        request.session = {'user_id': self.user1.id}
-        response = create_webhook(request)
-
-        content = json.loads(response.content.decode())
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(content["success"])
-        self.assertEqual(content["message"], "Webhook sucessfully created")
-        self.assertIsNotNone(content.get("webhook"))
-
     def test_edit_webhook_GET(self):
         request = self.factory.get('/')
         response = edit_webhook(request)
 
+        content = json.loads(response.content.decode())
+
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            response.content.decode(),
-            "Error: Request is not of method POST"
-        )
+        self.assertFalse(content["ok"])
+        self.assertEqual(content["message"], "Request is not of method POST")
 
     def test_edit_webhook_POST_missing_parameters(self):
         request = self.factory.post('/')
@@ -243,11 +152,11 @@ class WebHookRequestViewTests(TestCase):
         content = json.loads(response.content.decode())
 
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
+        self.assertFalse(content["ok"])
         self.assertEqual(
             content["message"],
             "Request is missing parameters. Should have app_id"
-            ", new_webhook_url, new_siteid, new_roomid, new_contact"
+            ", url, siteid, roomid, contact"
             " as well as a sessionid cookie"
         )
 
@@ -255,8 +164,8 @@ class WebHookRequestViewTests(TestCase):
         request = self.factory.post(
             '/',
             {
-                'app_id': self.app2.id, 'new_siteid': 1, 'new_roomid': 1,
-                'new_contact': 1, 'new_webhook_url': 1
+                'app_id': self.app2.id, 'siteid': 1, 'roomid': 1,
+                'contact': 1, 'url': 1
             }
         )
         request.session = {'user_id': self.user1.id}
@@ -265,45 +174,23 @@ class WebHookRequestViewTests(TestCase):
         content = json.loads(response.content.decode())
 
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
+        self.assertFalse(content["ok"])
         self.assertEqual(
             content["message"],
             "App does not exist or user is lacking permission."
         )
 
-    @patch("keen.add_event", lambda *args: None)
-    def test_edit_webhook_POST_user_owns_app_url_is_the_same(self):
-        webhook_ = Webhook.objects.create(
-            app=self.app1, url="http://old", siteid=1, roomid=1, contact=1
-        )
-
-        request = self.factory.post(
-            '/',
-            {
-                'app_id': self.app1.id, 'new_siteid': 2, 'new_roomid': 2,
-                'new_contact': 2, 'new_webhook_url': "http://old"
-            }
-        )
-        request.session = {'user_id': self.user1.id}
-        response = edit_webhook(request)
-
-        content = json.loads(response.content.decode())
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(content["success"])
-        self.assertEqual(content["message"], "Webhook sucessfully changed.")
-
     @patch("dashboard.webhook_views.verify_ownership", lambda *args: False)
-    def test_edit_webhook_POST_user_owns_app_changing_url_verification_fail(self):
-        webhook_ = Webhook.objects.create(
-            app=self.app1, url="http://old", siteid=1, roomid=1, contact=1
-        )
+    @patch("dashboard.webhook_views.is_url_safe", lambda *args: True)
+    def test_edit_webhook_POST_ownership_verification_fail(
+        self
+    ):
 
         request = self.factory.post(
             '/',
             {
-                'app_id': self.app1.id, 'new_siteid': 2, 'new_roomid': 2,
-                'new_contact': 2, 'new_webhook_url': "http://new"
+                'app_id': self.app1.id, 'siteid': 2, 'roomid': 2,
+                'contact': 2, 'url': "http://new"
             }
         )
         request.session = {'user_id': self.user1.id}
@@ -312,7 +199,7 @@ class WebHookRequestViewTests(TestCase):
         content = json.loads(response.content.decode())
 
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(content["success"])
+        self.assertFalse(content["ok"])
         self.assertEqual(
             content["message"],
             "Ownership of webhook can't be verified."
@@ -320,17 +207,17 @@ class WebHookRequestViewTests(TestCase):
         )
 
     @patch("dashboard.webhook_views.verify_ownership", lambda *args: True)
+    @patch("dashboard.webhook_views.is_url_safe", lambda *args: True)
     @patch("keen.add_event", lambda *args: None)
-    def test_edit_webhook_POST_user_owns_app_changing_url_verification_success(self):
-        webhook_ = Webhook.objects.create(
-            app=self.app1, url="http://old", siteid=1, roomid=1, contact=1
-        )
+    def test_edit_webhook_POST_user_owns_app_changing_url_verification_ok(
+        self
+    ):
 
         request = self.factory.post(
             '/',
             {
-                'app_id': self.app1.id, 'new_siteid': 2, 'new_roomid': 2,
-                'new_contact': 2, 'new_webhook_url': "http://new"
+                'app_id': self.app1.id, 'siteid': 2, 'roomid': 2,
+                'contact': 2, 'url': "http://new"
             }
         )
         request.session = {'user_id': self.user1.id}
@@ -339,5 +226,5 @@ class WebHookRequestViewTests(TestCase):
         content = json.loads(response.content.decode())
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(content["success"])
+        self.assertTrue(content["ok"])
         self.assertEqual(content["message"], "Webhook sucessfully changed.")
