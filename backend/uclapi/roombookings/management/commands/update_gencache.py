@@ -20,6 +20,7 @@ class Command(BaseCommand):
                 dsn=os.environ.get("DB_ROOMS_NAME")
             )
 
+
         cur = con.cursor()
 
         select_query = ('SELECT * FROM "CMIS_UCLAPI_V_BOOKINGS"'

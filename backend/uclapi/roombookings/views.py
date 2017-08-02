@@ -11,9 +11,9 @@ from .models import BookingA, BookingB, Equipment, Lock, Room
 
 
 @api_view(['GET'])
-@does_token_exist
-@throttle
-@log_api_call
+# @does_token_exist
+# @throttle
+# @log_api_call
 def get_rooms(request):
     # add them to iterables so can be filtered without if-else
     request_params = {}

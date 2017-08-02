@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'dashboard',
     'roombookings',
+    'timetable',
     'opbeat.contrib.django',
     'raven.contrib.django.raven_compat',
     'corsheaders'
@@ -133,7 +134,7 @@ DATABASES = {
     }
 }
 
-DATABASE_ROUTERS = ['uclapi.dbrouters.ModelRouter']
+# DATABASE_ROUTERS = ['uclapi.dbrouters.ModelRouter']
 
 # analytics
 OPBEAT = {
